@@ -46,8 +46,8 @@ def getData():
 	print "received coordinates: [" + lat1 + ", " + lat2 + "], [" + lng1 + ", " + lng2 + "]"
 	
 	client = pyorient.OrientDB("localhost", 2424)
-	session_id = client.connect("root", "password")
-	db_name = "property_test"
+	session_id = client.connect("root", "admin")
+	db_name = "soufun"
 	db_username = "admin"
 	db_password = "admin"
 
@@ -62,8 +62,6 @@ def getData():
 
 	records = client.command(query.format(lat1, lat2, lng1, lng2))
 
-	random.shuffle(records)
-	records = records[:100]
 
 	numListings = len(records)
 	print 'received ' + str(numListings) + ' records'
@@ -81,7 +79,7 @@ def getData():
 
 		output["features"].append(feature)
 
-	q.put('idle')
+	q.put('The server processed '+str(numListings)+' listings and is now idle.')
 
 	return json.dumps(output)
 

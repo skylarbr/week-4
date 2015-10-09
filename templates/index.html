@@ -22,20 +22,26 @@
 			fill-opacity: .3;
 			fill: red;
 			stroke-width: 0px;
+			-webkit-transition: fill 0.5s;
+    		transition: fill 0.5s;
 		}
 		circle:hover {
-		  	stroke: black;
-		  	stroke-width: 2px;
+			fill: green !important;
 		  	cursor: crosshair;
+		  	-webkit-transition: fill 0.5s;
+    		transition: fill 0.5s;
+
 		}
 
 		/*EXPERIMENT WITH YOUR OWN STYLING RULES TO CHANGE THE APPEARANCE OF THE TOOLTIP, THE MENU, AND THE MESSAGE TEXT*/
 		div.tooltip{
 			padding: 6px;
 			background: white;
-			visibility: hidden;
+			opacity: 0;
 			position: absolute;
 			z-index: 10;
+			-webkit-transition: opacity 0.5s;
+    		transition: opacity 0.5s;
 		}
 		p.tooltip-text{
 			margin: 0px;
@@ -49,7 +55,7 @@
 			top: 0px;
 			right: 0px;
 			width: 250px;
-			height: 500px;
+			height: auto;
 			background: rgba(255,255,255,.8);
 		}
 
@@ -70,13 +76,15 @@
 	<div class="tooltip">
 		<p class="tooltip-text" id="title">This is the title</p>
 		<p class="tooltip-text" id="price">This is the price</p>
+		<p class="tooltip-text" id="location">These are the coordinates</p>
 	</div>
 
 	<!-- EXPERIMENT WITH OTHER FORM ELEMENTS, AND ADD SOME TEXT TO THE MENU TO EXPLAIN WHAT IS HAPPENING ON THE SITE -->
 	<div class="menu">
 		<p><h4>DMC Web Stack</h4></p>
 		<form>
-			<p><input id="heatmap" type="checkbox">Heat Map</p>
+			<p>Real Estate Listings in Shenzhen</p>
+			<p><input id="heatmap" type="checkbox" checked>Heat Map</p>
 			<p><input type="button" value="Update Data" onclick="updateData()"></p>
 			<p>Status: <em id="message"></em></p>
 		</form>
@@ -97,23 +105,24 @@
 		var tooltip = d3.select("div.tooltip");
 		var tooltip_title = d3.select("#title");
 		var tooltip_price = d3.select("#price");
+		var tooltip_location = d3.select("#location");
 
 
 		var map = L.map('map').setView([22.539029, 114.062076], 16);
 
 		//this is the OpenStreetMap tile implementation
 
-		L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-    		attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-		}).addTo(map);
+		// L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+  //   		attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+		// }).addTo(map);
 
 		//uncomment for Mapbox implementation, and supply your own access token
 
-		// L.tileLayer('https://api.tiles.mapbox.com/v4/{mapid}/{z}/{x}/{y}.png?access_token={accessToken}', {
-		// 	attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-		// 	mapid: 'mapbox.light',
-		// 	accessToken: [INSERT YOUR TOKEN HERE!]
-		// }).addTo(map);
+		L.tileLayer('https://api.tiles.mapbox.com/v4/{mapid}/{z}/{x}/{y}.png?access_token={accessToken}', {
+			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+			mapid: 'mapbox.light',
+			accessToken: 'pk.eyJ1Ijoic2t5bGFyYnIiLCJhIjoiY2lmaW84czRuYm5ybXJ5bHh5YnM5a3lzdiJ9.EFoA13UUx70WH41vhjRyuw'
+		}).addTo(map);
 
 		//create variables to store a reference to svg and g elements
 
@@ -152,16 +161,17 @@
 				circles.enter()
 					.append("circle")
 					.on("mouseover", function(d){
-						tooltip.style("visibility", "visible");
+						tooltip.style("opacity", "1");
 						tooltip_title.text(d.properties.name);
 						tooltip_price.text("Price: " + d.properties.price);
+						tooltip_location.text("Coordinates: x = " + projectPoint(d.geometry.coordinates[0], d.geometry.coordinates[1]).x +", y = "+projectPoint(d.geometry.coordinates[0], d.geometry.coordinates[1]).y);
 					})
 					.on("mousemove", function(){
 						tooltip.style("top", (d3.event.pageY-10)+"px")
 						tooltip.style("left",(d3.event.pageX+10)+"px");
 					})
 					.on("mouseout", function(){
-						tooltip.style("visibility", "hidden");
+						tooltip.style("opacity", "0");
 					})
 				;
 
@@ -184,10 +194,18 @@
 				    g   .attr("transform", "translate(" + (-topLeft[0] + buffer) + "," + (-topLeft[1] + buffer) + ")");
 
 				    // update circle position and size
+				    var heatmap = document.getElementById("heatmap").checked;
+				    var ramp=d3.scale.linear().domain([0,25]).range(["blue","red"]);
+
+
 				    circles
 				    	.attr("cx", function(d) { return projectPoint(d.geometry.coordinates[0], d.geometry.coordinates[1]).x; })
 				    	.attr("cy", function(d) { return projectPoint(d.geometry.coordinates[0], d.geometry.coordinates[1]).y; })
-		    			.attr("r", function(d) { return Math.pow(d.properties.price,.3); });
+		    			.attr("r", function(d) { return Math.pow(d.properties.price,.3); })
+		    			.style("fill", function(d) { 
+		    				if (heatmap == true)
+		    				{return ramp(Math.pow(d.properties.price,.3));} 
+		    				else{return 'red';};});
 				};
 
 				// call function to 
